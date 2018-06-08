@@ -80,7 +80,7 @@ function public.new(n, e, base)
     end
     if e and n then
         if hogweed.nettle_rsa_public_key_prepare(context) ~= 1 then
-            return nil, "Unable to prepare RSA public key."
+            return nil, "unable to prepare RSA public key"
         end
     end
     return setmetatable({ context = context }, public)
@@ -106,16 +106,26 @@ function private.new(d, p, q, a, b, c, base)
             return nil, err
         end
     end
+    local p1
     if p then
         local ok, err = mpz.set(context[0].p, p, base)
         if not ok then
             return nil, err
         end
+        if d and not a then
+            p1 = mpz.new()
+            mpz.sub(p1, context[0].p, 1)
+        end
     end
+    local q1
     if q then
         local ok, err = mpz.set(context[0].q, q, base)
         if not ok then
             return nil, err
+        end
+        if d and not b then
+            q1 = mpz.new()
+            mpz.sub(q1, context[0].q, 1)
         end
     end
     if a then
@@ -123,22 +133,30 @@ function private.new(d, p, q, a, b, c, base)
         if not ok then
             return nil, err
         end
+    elseif p1 then
+        mpz.div(context[0].a, context[0].d, p1)
     end
     if b then
         local ok, err = mpz.set(context[0].b, b, base)
         if not ok then
             return nil, err
         end
+    elseif q1 then
+        mpz.div(context[0].b, context[0].d, q1)
     end
     if c then
         local ok, err = mpz.set(context[0].c, c, base)
         if not ok then
             return nil, err
         end
+    elseif q and p then
+        if mpz.invert(context[0].c, context[0].q, context[0].p) == 0 then
+           mpz.invert(context[0].c, context[0].q, context[0].p) -- try again once
+        end
     end
     if d or p or q or a or b or c then
         if hogweed.nettle_rsa_private_key_prepare(context) ~= 1 then
-            return nil, "Unable to prepare an RSA private key."
+            return nil, "unable to prepare an RSA private key"
         end
     end
     return setmetatable({ context = context }, private)
@@ -205,7 +223,7 @@ function keypair.new(n, e, r, p, seed)
         return nil, err
     end
     if hogweed.nettle_rsa_generate_keypair(pux.context, prx.context, rc, rf, nil, p, n, 0) ~= 1 then
-        return nil, "Unable to generate RSA keypair."
+        return nil, "unable to generate RSA keypair"
     end
     return setmetatable({
         public  = pux,
@@ -217,7 +235,7 @@ function keypair.der(data)
     local pux = public.new()
     local prx = private.new()
     if hogweed.nettle_rsa_keypair_from_der(pux.context, prx.context, 0, #data, data) ~= 1 then
-        return nil, "Unable to generate RSA keypair from DER."
+        return nil, "unable to generate RSA keypair from DER"
     end
     return setmetatable({
         public  = pux,
@@ -251,7 +269,7 @@ function rsa:encrypt(plain, r, seed)
         rf = yarrow.func
     end
     if hogweed.nettle_rsa_encrypt(self.public.context, rc, rf, #plain, plain, encrypted) ~= 1 then
-        return nil, "Unable to RSA encrypt."
+        return nil, "unable to RSA encrypt"
     end
     return mpz.string(encrypted)
 end
@@ -266,31 +284,31 @@ function rsa:decrypt(encrypted)
     local b = ffi_new(buf, sz)
     s[0] = sz
     if hogweed.nettle_rsa_decrypt(self.private.context, s, b, ct) ~= 1 then
-        return nil, "Unable to RSA decrypt."
+        return nil, "unable to RSA decrypt"
     end
     return ffi_str(b, s[0])
 end
 
 function rsa:sign(digest, base)
-    local l, ok = #digest, nil
+    local l = #digest
     if l == 16 then
         if hogweed.nettle_rsa_md5_sign_digest(self.private.context, digest, sig) ~= 1 then
-            return nil, "Unable to RSA MD5 sign."
+            return nil, "unable to RSA MD5 sign"
         end
     elseif l == 20 then
         if hogweed.nettle_rsa_sha1_sign_digest(self.private.context, digest, sig) ~= 1 then
-            return nil, "Unable to RSA SHA1 sign."
+            return nil, "unable to RSA SHA1 sign"
         end
     elseif l == 32 then
         if hogweed.nettle_rsa_sha256_sign_digest(self.private.context, digest, sig) ~= 1 then
-            return nil, "Unable to RSA SHA256 sign."
+            return nil, "unable to RSA SHA256 sign"
         end
     elseif l == 64 then
         if hogweed.nettle_rsa_sha512_sign_digest(self.private.context, digest, sig) ~= 1 then
-            return nil, "Unable to RSA SHA512 sign."
+            return nil, "unable to RSA SHA512 sign"
         end
     else
-        return nil, "Supported digests are MD5, SHA1, SHA256, and SHA512."
+        return nil, "supported digests are MD5, SHA1, SHA256, and SHA512"
     end
     return mpz.string(sig, base)
 end
@@ -303,22 +321,22 @@ function rsa:verify(digest, signature, base)
     local l = #digest
     if l == 16 then
         if hogweed.nettle_rsa_md5_verify_digest(self.public.context, digest, sig) ~= 1 then
-            return nil, "Unable to RSA MD5 verify."
+            return nil, "unable to RSA MD5 verify"
         end
     elseif l == 20 then
         if hogweed.nettle_rsa_sha1_verify_digest(self.public.context, digest, sig) ~= 1 then
-            return nil, "Unable to RSA SHA1 verify."
+            return nil, "unable to RSA SHA1 verify"
         end
     elseif l == 32 then
         if hogweed.nettle_rsa_sha256_verify_digest(self.public.context, digest, sig) ~= 1 then
-            return nil, "Unable to RSA SHA256 verify."
+            return nil, "unable to RSA SHA256 verify"
         end
     elseif l == 64 then
         if hogweed.nettle_rsa_sha512_verify_digest(self.public.context, digest, sig) ~= 1 then
-            return nil, "Unable to RSA SHA512 verify."
+            return nil, "unable to RSA SHA512 verify"
         end
     else
-        return nil, "Supported digests are MD5, SHA1, SHA256, and SHA512."
+        return nil, "supported digests are MD5, SHA1, SHA256, and SHA512"
     end
     return true
 end
@@ -331,18 +349,18 @@ function rsa:verify_pss(digest, signature, base, salt_length)
     local l = #digest
     if l == 32 then
         if hogweed.nettle_rsa_pss_sha256_verify_digest(self.public.context, salt_length or 32, digest, sig) ~= 1 then
-            return nil, "Unable to RSA PSS SHA256 verify."
+            return nil, "unable to RSA PSS SHA256 verify"
         end
     elseif l == 48 then
         if hogweed.nettle_rsa_pss_sha384_verify_digest(self.public.context, salt_length or 48, digest, sig) ~= 1 then
-            return nil, "Unable to RSA PSS SHA384 verify."
+            return nil, "unable to RSA PSS SHA384 verify"
         end
     elseif l == 64 then
         if hogweed.nettle_rsa_pss_sha512_verify_digest(self.public.context, salt_length or 64, digest, sig) ~= 1 then
-            return nil, "Unable to RSA PSS SHA512 verify."
+            return nil, "unable to RSA PSS SHA512 verify"
         end
     else
-        return nil, "Supported digests are SHA256, SHA384, and SHA512."
+        return nil, "supported digests are SHA256, SHA384, and SHA512"
     end
     return true
 end

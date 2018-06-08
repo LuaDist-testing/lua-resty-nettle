@@ -9,6 +9,7 @@ local ffi_new      = ffi.new
 local ffi_cdef     = ffi.cdef
 local ffi_typeof   = ffi.typeof
 local setmetatable = setmetatable
+local type         = type
 
 ffi_cdef[[
 void nettle_ecc_point_init(struct ecc_point *p, const struct ecc_curve *ecc);
@@ -26,13 +27,26 @@ void nettle_ecc_point_mul_g(struct ecc_point *r, const struct ecc_scalar *n);
 
 local pub  = ffi_typeof "ECC_POINT[1]"
 
-local curves = {
-    ["P-192"] = hogweed.nettle_secp_192r1,
-    ["P-224"] = hogweed.nettle_secp_224r1,
-    ["P-256"] = hogweed.nettle_secp_256r1,
-    ["P-384"] = hogweed.nettle_secp_384r1,
-    ["P-521"] = hogweed.nettle_secp_521r1
-}
+local curves = {}
+
+do
+    local pcall = pcall
+
+    local function curve(name)
+        local o, c = pcall(function()
+            return hogweed[name]
+        end)
+        if o then
+            return c
+        end
+    end
+
+    curves["P-192"] = curve("nettle_secp_192r1")
+    curves["P-224"] = curve("nettle_secp_224r1")
+    curves["P-256"] = curve("nettle_secp_256r1")
+    curves["P-384"] = curve("nettle_secp_384r1")
+    curves["P-521"] = curve("nettle_secp_521r1")
+end
 
 local curve = {}
 
@@ -42,11 +56,15 @@ local point = {}
 
 point.__index = point
 
-function point.new(curve, x, y, base)
+function point.new(c, x, y, base)
     local context = ffi_gc(ffi_new(pub), hogweed.nettle_ecc_point_clear)
 
-    if curves[curve] then
-        hogweed.nettle_ecc_point_init(context, curves[curve])
+    if type(c) == "cdata" then
+        hogweed.nettle_ecc_point_init(context, c)
+    elseif curves[c] then
+        hogweed.nettle_ecc_point_init(context, curves[c])
+    else
+        return nil, "invalid curve for ECC point"
     end
 
     if x and y then
@@ -60,7 +78,7 @@ function point.new(curve, x, y, base)
             return nil, err
         end
         if hogweed.nettle_ecc_point_set(context, mx, my) ~= 1 then
-            return nil, "Unable to set ECC point."
+            return nil, "unable to set ECC point"
         end
     end
 
