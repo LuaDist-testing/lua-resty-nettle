@@ -1,16 +1,16 @@
 -- This file was automatically generated for the LuaDist project.
 
 package = "lua-resty-nettle"
-version = "0.104-1"
+version = "0.105-1"
 -- LuaDist source
 source = {
-  tag = "0.104-1",
+  tag = "0.105-1",
   url = "git://github.com/LuaDist-testing/lua-resty-nettle.git"
 }
 -- Original source
 -- source  = {
 --     url        = "git://github.com/bungle/lua-resty-nettle.git",
---     branch     = "v0.104",
+--     branch     = "v0.105",
 -- }
 description = {
     summary    = "LuaJIT FFI bindings for Nettle (a low-level cryptographic library)",

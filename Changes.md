@@ -2,6 +2,11 @@
 
 All notable changes to `lua-resty-nettle` will be documented in this file.
 
+## [0.104] - 2017-09-29
+### Fixed
+- Hogweed library loading (copy paste bug, sorry)
+
+
 ## [0.104] - 2017-09-28
 ### Added
 - Option to override library paths with global variables
@@ -11,14 +16,14 @@ All notable changes to `lua-resty-nettle` will be documented in this file.
 ## [0.103] - 2017-08-12
 ### Fixed
 - More robust library loaders (they sometimes returned non-helpful booleans)
-  (see [#13](https://github.com/bungle/lua-resty-nettle/issues/10),
+  (see [#14](https://github.com/bungle/lua-resty-nettle/issues/14),
      thanks [@xiangnanscu](https://github.com/xiangnanscu))
 
 ## [0.102] - 2017-06-05
 ### Fixed
 - Prefixed Nettle structs to avoid naming conflicts with other
   libraries such as OpenSSL
-  (see [#13](https://github.com/bungle/lua-resty-nettle/issues/10),
+  (see [#13](https://github.com/bungle/lua-resty-nettle/issues/13),
    thanks [@xiangnanscu](https://github.com/xiangnanscu))
 
 ## [0.101] - 2017-06-05
