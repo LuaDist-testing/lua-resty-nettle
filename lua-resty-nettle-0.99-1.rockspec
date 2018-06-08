@@ -1,16 +1,16 @@
 -- This file was automatically generated for the LuaDist project.
 
 package = "lua-resty-nettle"
-version = "0.98-1"
+version = "0.99-1"
 -- LuaDist source
 source = {
-  tag = "0.98-1",
+  tag = "0.99-1",
   url = "git://github.com/LuaDist-testing/lua-resty-nettle.git"
 }
 -- Original source
 -- source  = {
 --     url        = "git://github.com/bungle/lua-resty-nettle.git",
---     branch     = "v0.98",
+--     branch     = "v0.99",
 -- }
 description = {
     summary    = "LuaJIT FFI bindings for Nettle (a low-level cryptographic library)",
@@ -45,6 +45,7 @@ build = {
         ["resty.nettle.ecc"]                  = "lib/resty/nettle/ecc.lua",
         ["resty.nettle.ecdsa"]                = "lib/resty/nettle/ecdsa.lua",
         ["resty.nettle.ed25519-sha512"]       = "lib/resty/nettle/ed25519-sha512.lua",
+        ["resty.nettle.gmp"]                  = "lib/resty/nettle/gmp.lua",
         ["resty.nettle.gosthash94"]           = "lib/resty/nettle/gosthash94.lua",
         ["resty.nettle.hash"]                 = "lib/resty/nettle/hash.lua",
         ["resty.nettle.hmac"]                 = "lib/resty/nettle/hmac.lua",
