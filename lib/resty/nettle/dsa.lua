@@ -1,10 +1,9 @@
 -- TODO: THIS IS NOT DONE, IT DOESN'T WORK YET.
 
-require "resty.nettle"
+require "resty.nettle.library"
 
 local ffi          = require "ffi"
 local ffi_new      = ffi.new
-local ffi_load     = ffi.load
 local ffi_cdef     = ffi.cdef
 local ffi_typeof   = ffi.typeof
 local ffi_str      = ffi.string
@@ -15,7 +14,7 @@ local gmp          = require "resty.nettle.gmp"
 local buffer       = require "resty.nettle.buffer"
 local yarrow       = require "resty.nettle.yarrow"
 local knuth        = require "resty.nettle.knuth-lfib"
-local hogweed      = ffi_load "hogweed"
+local hogweed      = require "resty.nettle.hogweed"
 
 ffi_cdef[[
 typedef struct dsa_params {
@@ -39,8 +38,8 @@ int  nettle_dsa_keypair_to_sexp(struct nettle_buffer *buffer, const char *algori
 ]]
 local size = ffi_new "size_t[1]"
 local buf = ffi_typeof "uint8_t[?]"
-local pub = ffi_typeof "RSA_PUBLIC_KEY[1]"
-local pri = ffi_typeof "RSA_PRIVATE_KEY[1]"
+--local pub = ffi_typeof "RSA_PUBLIC_KEY[1]"
+--local pri = ffi_typeof "RSA_PRIVATE_KEY[1]"
 
 local keypair = {}
 function keypair:__index(n)
