@@ -1164,7 +1164,7 @@ $ opm get bungle/lua-resty-nettle
 ### Using LuaRocks
 
 ```Shell
-$ luarocks install lua-resty-template
+$ luarocks install lua-resty-nettle
 ```
 
 LuaRocks repository for `lua-resty-nettle` is located at https://luarocks.org/modules/bungle/lua-resty-nettle.
@@ -1401,27 +1401,16 @@ local dgst = gh94:digest()
 ## Cipher Functions
 
 #### AES
-
 #### ARCFOUR
-
 #### ARCTWO
-
 #### BLOWFISH
-
 #### Camellia
-
 #### CAST128
-
 #### ChaCha
-
 #### DES
-
 #### DES3
-
 #### Salsa20
-
 #### SERPENT
-
 #### TWOFISH
 
 ## Cipher Modes
@@ -1460,7 +1449,7 @@ The changes of every release of this module is recorded in [Changes.md](https://
 `lua-resty-nettle` uses two clause BSD license.
 
 ```
-Copyright (c) 2014 – 2016, Aapo Talvensaari
+Copyright (c) 2014 – 2017, Aapo Talvensaari
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,

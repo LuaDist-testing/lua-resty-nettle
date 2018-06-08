@@ -1,4 +1,6 @@
+-- TODO: THIS IS NOT DONE, IT IS NOT FULLY IMPLEMENTED.
 require "resty.nettle.library"
+require "resty.nettle.types.rsa"
 require "resty.nettle.types.md5"
 require "resty.nettle.types.sha1"
 require "resty.nettle.types.sha2"
@@ -8,6 +10,7 @@ local ffi_new      = ffi.new
 local ffi_cdef     = ffi.cdef
 local ffi_typeof   = ffi.typeof
 local ffi_str      = ffi.string
+local error        = error
 local assert       = assert
 local rawget       = rawget
 local tonumber     = tonumber
@@ -19,20 +22,6 @@ local knuth        = require "resty.nettle.knuth-lfib"
 local hogweed      = require "resty.nettle.hogweed"
 
 ffi_cdef[[
-typedef struct rsa_public_key {
-  size_t size;
-  mpz_t n;
-  mpz_t e;
-} RSA_PUBLIC_KEY;
-typedef struct rsa_private_key {
-  size_t size;
-  mpz_t d;
-  mpz_t p;
-  mpz_t q;
-  mpz_t a;
-  mpz_t b;
-  mpz_t c;
-} RSA_PRIVATE_KEY;
 void nettle_rsa_public_key_init(struct rsa_public_key *key);
 void nettle_rsa_public_key_clear(struct rsa_public_key *key);
 int  nettle_rsa_public_key_prepare(struct rsa_public_key *key);
@@ -67,6 +56,7 @@ local size = ffi_new "size_t[1]"
 local buf = ffi_typeof "uint8_t[?]"
 local pub = ffi_typeof "RSA_PUBLIC_KEY[1]"
 local pri = ffi_typeof "RSA_PRIVATE_KEY[1]"
+local mpz = gmp.context()
 
 local public = {}
 public.__index = public
@@ -115,6 +105,7 @@ function private:prepare()
 end
 
 local keypair = {}
+
 function keypair:__index(n)
     if n == "sexp" then
         local b = buffer.new()
@@ -124,10 +115,12 @@ function keypair:__index(n)
         return rawget(keypair, n)
     end
 end
+
 function keypair:clear()
     hogweed.nettle_rsa_public_key_clear(self.public.context)
     hogweed.nettle_rsa_private_key_clear(self.private.context)
 end
+
 function keypair.new(n, e, r, p, seed)
     n = n or 4096
     e = e or 65537
@@ -136,7 +129,7 @@ function keypair.new(n, e, r, p, seed)
         rc = knuth.context(seed)
         rf = knuth.func
     else
-        rc = yarrow.context(seed)
+        rc = yarrow.context(seed or knuth.new():random(32))
         rf = yarrow.func
     end
     local pux = public.new()
@@ -148,6 +141,7 @@ function keypair.new(n, e, r, p, seed)
         private = prx
     }, keypair)
 end
+
 function keypair.der(data)
     local pux = public.new()
     local prx = private.new()
@@ -157,6 +151,7 @@ function keypair.der(data)
         private = prx
     }, keypair)
 end
+
 local rsa = { keypair = keypair, key = { public = public, private = private } }
 rsa.__index = rsa
 
@@ -180,7 +175,7 @@ function rsa:encrypt(plain, r, seed)
         rc = knuth.context(seed)
         rf = knuth.func
     else
-        rc = yarrow.context(seed)
+        rc = yarrow.context(seed or knuth.new():random(32))
         rf = yarrow.func
     end
     local ok = hogweed.nettle_rsa_encrypt(self.public.context, rc, rf, #plain, plain, encrypted)
@@ -201,6 +196,41 @@ function rsa:decrypt(encrypted)
         return ffi_str(b, s[0])
     end
     return nil
+end
+
+function rsa:sign(digest, base)
+    local l, ok = #digest, nil
+    if l == 16 then
+        ok = hogweed.nettle_rsa_md5_sign_digest(self.private.context, digest, mpz)
+    elseif l == 20 then
+        ok = hogweed.nettle_rsa_sha1_sign_digest(self.private.context, digest, mpz)
+    elseif l == 32 then
+        ok = hogweed.nettle_rsa_sha256_sign_digest(self.private.context, digest, mpz)
+    elseif l == 64 then
+        ok = hogweed.nettle_rsa_sha512_sign_digest(self.private.context, digest, mpz)
+    else
+        error("Supported digests are MD5, SHA1, SHA256, and SHA512")
+    end
+    if ok == 1 then
+        return gmp.string(mpz, base)
+    end
+    return nil
+end
+
+function rsa:verify(digest, signature, base)
+    local l, ok = #digest, nil
+    if l == 16 then
+        ok = hogweed.nettle_rsa_md5_verify_digest(self.public.context, digest, gmp.context(signature, base))
+    elseif l == 20 then
+        ok = hogweed.nettle_rsa_sha1_verify_digest(self.public.context, digest, gmp.context(signature, base))
+    elseif l == 32 then
+        ok = hogweed.nettle_rsa_sha256_verify_digest(self.public.context, digest, gmp.context(signature, base))
+    elseif l == 64 then
+        ok = hogweed.nettle_rsa_sha512_verify_digest(self.public.context, digest, gmp.context(signature, base))
+    else
+        error("Supported digests are MD5, SHA1, SHA256, and SHA512")
+    end
+    return ok == 1
 end
 
 return rsa
