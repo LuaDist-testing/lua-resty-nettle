@@ -1,5 +1,5 @@
 local require               = require
-local nettle, padding       = { _VERSION = "0.96" }, {}
+local nettle, padding       = { _VERSION = "0.98" }, {}
 nettle.aead                 = require "resty.nettle.aead"
 nettle.aes                  = require "resty.nettle.aes"
 nettle.arcfour              = require "resty.nettle.arcfour"
@@ -14,13 +14,13 @@ nettle.chacha               = require "resty.nettle.chacha"
 nettle.chacha_poly1305      = require "resty.nettle.chacha-poly1305"
 nettle["chacha-poly1305"]   = nettle.chacha_poly1305
 nettle.cipher               = require "resty.nettle.cipher"
+nettle.curve25519           = require "resty.nettle.curve25519"
 nettle.des                  = require "resty.nettle.des"
 nettle.dsa                  = require "resty.nettle.dsa"
 nettle.ecc                  = require "resty.nettle.ecc"
 nettle.ecdsa                = require "resty.nettle.ecdsa"
 nettle.ed25519_sha512       = require "resty.nettle.ed25519-sha512"
 nettle["ed25519-sha512"]    = nettle.ed25519_sha512
-nettle.gmp                  = require "resty.nettle.gmp"
 nettle.gosthash94           = require "resty.nettle.gosthash94"
 nettle.hash                 = require "resty.nettle.hash"
 nettle.hmac                 = require "resty.nettle.hmac"
@@ -31,6 +31,7 @@ nettle.library              = require "resty.nettle.library"
 nettle.md2                  = require "resty.nettle.md2"
 nettle.md4                  = require "resty.nettle.md4"
 nettle.md5                  = require "resty.nettle.md5"
+nettle.mpz                  = require "resty.nettle.mpz"
 nettle.pbkdf2               = require "resty.nettle.pbkdf2"
 nettle.poly1305             = require "resty.nettle.poly1305"
 nettle.ripemd160            = require "resty.nettle.ripemd160"

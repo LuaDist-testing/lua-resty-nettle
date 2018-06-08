@@ -1,10 +1,15 @@
 local lib          = require "resty.nettle.library"
+local bit          = require "bit"
 local ffi          = require "ffi"
 local ffi_new      = ffi.new
 local ffi_typeof   = ffi.typeof
 local ffi_cdef     = ffi.cdef
 local ffi_str      = ffi.string
-local assert       = assert
+local bnot         = bit.bnot
+local band         = bit.band
+local byte         = string.byte
+local ceil         = math.ceil
+local floor        = math.floor
 local tonumber     = tonumber
 local setmetatable = setmetatable
 
@@ -53,20 +58,20 @@ function encoder.new(urlsafe)
 end
 
 function encoder:single(src)
-    local len = tonumber(lib.nettle_base64_encode_single(self.context, buf16, (src:byte())))
-    return ffi_str(buf16, len), tonumber(len)
+    local len = lib.nettle_base64_encode_single(self.context, buf16, byte(src))
+    return ffi_str(buf16, len), len
 end
 
 function encoder:update(src)
     local len = #src
-    local dln = (len * 8 + 4) / 6
+    local dln = ceil(4 * len / 3)
     local dst = ffi_new(uint8t, dln)
-    local len = tonumber(lib.nettle_base64_encode_update(self.context, dst, len, src))
+    local len = lib.nettle_base64_encode_update(self.context, dst, len, src)
     return ffi_str(dst, len), len
 end
 
 function encoder:final()
-    local len = tonumber(lib.nettle_base64_encode_final(self.context, buf24))
+    local len = lib.nettle_base64_encode_final(self.context, buf24)
     return ffi_str(buf24, len), len
 end
 
@@ -84,27 +89,32 @@ function decoder.new(urlsafe)
 end
 
 function decoder:single(src)
-    local len = tonumber(lib.nettle_base64_decode_single(self.context, buf8, (src:byte())))
+    local len = lib.nettle_base64_decode_single(self.context, buf8, byte(src))
     return ffi_str(buf8, len), len
-
 end
 
 function decoder:update(src)
     local len = #src
-    local dst = ffi_new(uint8t, (len + 1) * 6 / 8)
-    lib.nettle_base64_decode_update(self.context, length, dst, len, src)
+    local dln = floor(len * 3 / 4)
+    local dst = ffi_new(uint8t, dln)
+    if lib.nettle_base64_decode_update(self.context, length, dst, len, src) ~= 1 then
+        return nil, "Unable to decode base64 data."
+    end
     local len = tonumber(length[0])
     return ffi_str(dst, len), len
 end
 
 function decoder:final()
-    return (assert(lib.nettle_base64_decode_final(self.context) == 1, "Base64 final padding is incorrect."))
+    if lib.nettle_base64_decode_final(self.context) ~= 1 then
+        return nil, "Final padding of base64 is incorrect."
+    end
+    return true
 end
 
 local base64 = setmetatable({ encoder = encoder, decoder = decoder }, {
     __call = function(_, src)
         local len = #src
-        local dln = (len + 2) / 3 * 4
+        local dln = ceil(4 * len / 3)
         local dst = ffi_new(uint8t, dln)
         lib.nettle_base64_encode_raw(dst, len, src)
         return ffi_str(dst, dln)
@@ -119,23 +129,32 @@ function base64.encode(src, urlsafe)
         lib.nettle_base64_encode_init(ctx)
     end
     local len = #src
-    local dln = (len * 8 + 4) / 6
+    local dln = band((4 * len / 3) + 3, bnot(3))
     local dst = ffi_new(uint8t, dln)
     dst = ffi_str(dst, lib.nettle_base64_encode_update(ctx, dst, len, src))
-    return dst .. ffi_str(buf24, lib.nettle_base64_encode_final(ctx, buf24))
+    local fnl = lib.nettle_base64_encode_final(ctx, buf24)
+    if fnl > 0 then
+        return dst .. ffi_str(buf24, fnl)
+    end
+    return dst
 end
 
 function base64.decode(src, urlsafe)
     local ctx = ffi_new(ctxdec)
     local len = #src
-    local dst = ffi_new(uint8t, (len + 1) * 6 / 8)
+    local dln = floor(len * 3 / 4)
+    local dst = ffi_new(uint8t, dln)
     if urlsafe then
         lib.nettle_base64url_decode_init(ctx)
     else
         lib.nettle_base64_decode_init(ctx)
     end
-    lib.nettle_base64_decode_update(ctx, length, dst, len, src)
-    assert(lib.nettle_base64_decode_final(ctx) == 1, "Base64 final padding is incorrect.")
+    if lib.nettle_base64_decode_update(ctx, length, dst, len, src) ~= 1 then
+        return nil, "Unable to decode base64 data."
+    end
+    if lib.nettle_base64_decode_final(ctx) ~= 1 then
+        return nil, "Final padding of base64 is incorrect."
+    end
     return ffi_str(dst, length[0])
 end
 
